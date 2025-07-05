@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Конструктор config.json</title>
+<style>
+:root{
+  color-scheme:dark;
+  --bg:#121212;--panel:#1d1d1d;--border:#444;--border-h:#666;
+  --fg:#e0e0e0;--accent:#4ba3ff;--danger:#ff6767;--good:#5fe078
+}
+*{box-sizing:border-box}body{margin:0;font-family:system-ui,-apple-system,
+Segoe UI,Roboto,Helvetica,Arial,sans-serif;background:var(--bg);color:var(--fg);
+padding:1.8rem;display:flex;flex-direction:column;gap:2rem;max-width:880px;margin-inline:auto}
+h1{font-size:1.6rem;margin:0 0 .2rem 0;font-weight:600}
+section{background:var(--panel);border:1px solid var(--border);
+border-radius:.6rem;padding:1.4rem;display:flex;flex-direction:column;gap:1.4rem}
+label{font-weight:600;display:flex;flex-direction:column;gap:.3rem}
+label small{font-weight:400;font-size:.8rem;color:var(--border-h)}
+input,textarea{font:inherit;border:1px solid var(--border);border-radius:.4rem;
+padding:.55rem;background:#161616;color:var(--fg);width:100%}
+input:focus,textarea:focus{outline:none;border-color:var(--accent)}
+input[type=checkbox]{width:auto;margin-right:.5rem}
+details{border:1px dashed var(--border);border-radius:.5rem}
+details[open]{border-style:solid}
+summary{cursor:pointer;padding:.8rem 1rem;list-style:none;
+display:flex;align-items:center;gap:.6rem;font-weight:600}
+summary::-webkit-details-marker{display:none}
+summary::after{content:"▸";transition:transform .3s;font-size:.8rem}
+details[open] summary::after{transform:rotate(90deg)}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:1rem}
+.req *:not(small)::after{content:"*";color:var(--danger);margin-left:.2rem}
+.msg{font-size:.85rem;margin-top:.25rem;line-height:1.3}
+.bad{color:var(--danger)}.good{color:var(--good)}
+.buttons{display:flex;flex-wrap:wrap;gap:.8rem}
+button{background:#1c1c1c;border:1px solid var(--border);border-radius:.4rem;
+padding:.55rem 1.2rem;color:var(--fg);cursor:pointer;transition:.2s}
+button:hover{border-color:var(--accent);background:#161616}
+#dropZone{border:2px dashed var(--border);border-radius:.6rem;padding:1.8rem;
+text-align:center;cursor:pointer;transition:.2s}
+#dropZone.drag{border-color:var(--accent);background:#191919}
+.output{white-space:pre-wrap;word-break:break-word;background:#161616;
+border:1px solid var(--border);border-radius:.5rem;padding:1rem;min-height:6rem}
+hr{border:none;border-top:1px solid var(--border);margin:0}
+@media(max-width:520px){body{padding:1rem}}
+</style>
+</head>
+<body>
+
+<h1>Конструктор config.json</h1>
+
+<!-- Шаг 1. Загрузить существующий файл -->
+<section id="loaderSection">
+  <div id="dropZone">Перетащите сюда config.json или нажмите, чтобы выбрать файл</div>
+  <input type="file" accept="application/JSON" id="fileInput" hidden>
+  <p class="msg">Шаг необязательный: если файл уже есть, мы подставим значения в форму.</p>
+</section>
+
+<!-- Шаг 2. Заполнить форму  -->
+<form id="cfgForm">
+<section>
+  <h2>Основные настройки</h2>
+
+  <div class="grid">
+    <label class="req">Токен авторизации
+      <small>token</small>
+      <input name="token" required placeholder="пример: eyJhbGciOi..." autocomplete="off">
+    </label>
+
+    <label>Максимум действий на cookie
+      <small>limit_per_cookie</small>
+      <input type="number" name="limit_per_cookie" value="27" min="1">
+    </label>
+
+    <label>SOCKS5 прокси
+      <small>proxy</small>
+      <input name="proxy" placeholder="127.0.0.1:1080">
+    </label>
+
+    <label>Уникализация
+      <small>randomize</small>
+      <span><input type="checkbox" name="randomize" checked>Включить</span>
+    </label>
+
+    <label class="req">Количество потоков
+      <small>thread_count</small>
+      <input type="number" name="thread_count" min="1" value="1">
+    </label>
+  </div>
+
+  <label>Текст шаблона сообщения
+    <small>template (поддерживает **жирный**, [ссылки](#) и {a:url\|текст})</small>
+    <textarea name="template" id="templateField" rows="4" placeholder="Введите текст..."></textarea>
+  </label>
+</section>
+
+<details>
+  <summary>Расширенные настройки</summary>
+  <div class="grid" style="padding:1.2rem">
+    
+    <label class="req">URL API сервера
+      <small>api_base</small>
+      <input name="api_base" required placeholder="https://example.com/api">
+    </label>
+    <label>Резервная партия
+      <small>reserve_batch</small>
+      <input type="number" name="reserve_batch" value="1" min="0">
+    </label>
+    <label>Максимум потоков на браузер
+      <small>max_threads</small>
+      <input type="number" name="max_threads" value="1" min="1">
+    </label>
+    <label>Задержка (сек.)
+      <small>delay</small>
+      <input type="number" name="delay" value="10" min="0">
+    </label>
+    <label>Ссылка API записи
+      <small>link_api</small>
+      <input name="link_api">
+    </label>
+    <label>Папка cookie
+      <small>cookies_dir</small>
+      <input name="cookies_dir" value="cookies">
+    </label>
+    <label>Файл логов
+      <small>log_path</small>
+      <input name="log_path" value="sender.log">
+    </label>
+    <label>Файл базы данных
+      <small>db_path</small>
+      <input name="db_path" value="cookie_stats.sqlite3">
+    </label>
+    <label>User-Agent браузера
+      <small>user_agent</small>
+      <input name="user_agent"
+        value="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36">
+    </label>
+    <label>Headless-режим
+      <small>headless</small>
+      <span><input type="checkbox" name="headless" checked>Запуск без окна</span>
+    </label>
+  </div>
+</details>
+
+<!-- Превью и кнопки -->
+<section style="gap:1rem">
+  <h2>Предпросмотр шаблона</h2>
+  <div id="preview" class="output"></div>
+  <div class="buttons">
+    <button type="button" id="copyBtn">Копировать шаблон</button>
+    <button type="button" id="saveBtn">Скачать config.json</button>
+  </div>
+  <p id="status" class="msg"></p>
+</section>
+</form>
+
+<script>
+// ───────────────────────────── DOM
+const drop   = document.getElementById('dropZone');
+const inp    = document.getElementById('fileInput');
+const formEl = document.getElementById('cfgForm');
+const prev   = document.getElementById('preview');
+const status = document.getElementById('status');
+const tplInp = document.getElementById('templateField');
+
+// ───────────────────────────── Drag & Drop
+['dragenter','dragover','dragleave','drop'].forEach(e=>document.addEventListener(e,ev=>ev.preventDefault()));
+drop.addEventListener('click',()=>inp.click());
+drop.addEventListener('dragover',()=>drop.classList.add('drag'));
+drop.addEventListener('dragleave',()=>drop.classList.remove('drag'));
+drop.addEventListener('drop',e=>{
+  drop.classList.remove('drag');
+  if(e.dataTransfer.files[0]) loadFile(e.dataTransfer.files[0]);
+});
+inp.addEventListener('change',()=> inp.files[0] && loadFile(inp.files[0]));
+
+// ───────────────────────────── Helpers
+const q=(n)=>formEl.elements[n];
+function msg(text,good=false){
+  status.textContent=text;
+  status.className='msg '+(good?'good':'bad');
+}
+function fmtTemplate(t){
+  return t.replace(/\n\n/g,' <br> <br> ')
+          .replace(/\n/g,' <br> ')
+          .replace(/\*\*(.*?)\*\*/g,' <b>$1</b> ')
+          .replace(/\[(.*?)\]\((.*?)\)/g,' <a href="$2">$1</a> ')
+          .replace(/\{a:(.*?)\\|(.*?)\}/g,' <a href="$1">$2</a> ')
+          .replace(/\s+/g,' ').trim();
+}
+function updatePreview(){ prev.textContent=fmtTemplate(tplInp.value); }
+tplInp.addEventListener('input',updatePreview);
+
+// ───────────────────────────── Load
+function loadFile(file){
+  const r=new FileReader();
+  r.onload=ev=>{
+    try{
+      const data=JSON.parse(ev.target.result);
+      Object.entries(data).forEach(([k,v])=>{
+        if(!q(k)) return;
+        if(q(k).type==='checkbox') q(k).checked=v;
+        else q(k).value=v;
+      });
+      updatePreview(); msg('Значения из файла подставлены',true);
+    }catch{ msg('Ошибка: некорректный JSON'); }
+  };
+  r.readAsText(file);
+}
+
+// ───────────────────────────── Save
+document.getElementById('saveBtn').addEventListener('click',()=>{
+  if(!formEl.reportValidity()) return;
+  const data=new FormData(formEl),json={};
+  for(const [k,v] of data.entries()){
+    const el=q(k);
+    json[k]=el.type==='checkbox'?el.checked:
+            el.type==='number'  ?Number(v)||0
+                                 :v.trim();
+  }
+  json.template=fmtTemplate(json.template);
+
+  const blob=new Blob([JSON.stringify(json,null,2)],{type:'application/json'});
+  const link=Object.assign(document.createElement('a'),{
+    href:URL.createObjectURL(blob),download:'config.json'
+  });
+  link.click(); URL.revokeObjectURL(link.href);
+  msg('Файл сохранён',true);
+});
+
+// ───────────────────────────── Copy
+document.getElementById('copyBtn').addEventListener('click',async()=>{
+  await navigator.clipboard.writeText(prev.textContent);
+  msg('Шаблон скопирован',true);
+});
+
+// ───────────────────────────── 初期
+updatePreview();
+</script>
+</body>
+</html>
