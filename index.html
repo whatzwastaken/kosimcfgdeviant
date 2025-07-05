@@ -160,7 +160,7 @@ hr{border:none;border-top:1px solid var(--border);margin:0}
 </form>
 
 <script>
-// ───────────────────────────── DOM
+/* ─────────────── DOM */
 const drop   = document.getElementById('dropZone');
 const inp    = document.getElementById('fileInput');
 const formEl = document.getElementById('cfgForm');
@@ -168,28 +168,30 @@ const prev   = document.getElementById('preview');
 const status = document.getElementById('status');
 const tplInp = document.getElementById('templateField');
 
-// ───────────────────────────── Drag & Drop
+/* ─────────────── Drag & Drop */
 ['dragenter','dragover','dragleave','drop'].forEach(e =>
-  document.addEventListener(e, ev => ev.preventDefault()));
+  document.addEventListener(e, ev => ev.preventDefault())
+);
 drop.addEventListener('click', () => inp.click());
 drop.addEventListener('dragover', () => drop.classList.add('drag'));
 drop.addEventListener('dragleave', () => drop.classList.remove('drag'));
 drop.addEventListener('drop', e => {
   drop.classList.remove('drag');
-  if (e.dataTransfer.files[0]) loadFile(e.dataTransfer.files[0]);
+  e.dataTransfer.files[0] && loadFile(e.dataTransfer.files[0]);
 });
 inp.addEventListener('change', () => inp.files[0] && loadFile(inp.files[0]));
 
-// ───────────────────────────── Helpers
+/* ─────────────── Helpers */
 const q = n => formEl.elements[n];
-function msg(text, good = false) {
+
+function msg(text, ok = false) {
   status.textContent = text;
-  status.className   = 'msg ' + (good ? 'good' : 'bad');
+  status.className = 'msg ' + (ok ? 'good' : 'bad');
 }
 
-/* ======= formatText ======= */
+/* — аккуратное форматирование шаблона — */
 function formatText(raw) {
-  /* 1. прячем {placeholders} */
+  /* 1. сохраняем {placeholders} */
   const keep = {};
   let i = 0;
   const tmp = raw.replace(/\{[^{}]+\}/g, m => {
@@ -199,45 +201,47 @@ function formatText(raw) {
   });
 
   /* 2. экранируем HTML */
-  let t = tmp.replace(/[&<>]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+  let txt = tmp.replace(/[&<>]/g, c => (
+    { '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]
+  ));
 
-  /* 3. markdown-замены */
-  t = t
-    .replace(/\*\*(.+?)\*\*/g,  '<b>$1</b>')                       // **bold**
-    .replace(/\[([^\]]+?)\]\(([^)]+?)\)/g,'<a href="$2">$1</a>')   // [txt](url)
-    .replace(/\[(https?:\/\/[^\]]+?)\]/g, '<a href="$1">$1</a>')   // [url]
-    .replace(/\{a:([^|]+)\|([^}]+)\}/g,'<a href="$1">$2</a>');     // {a:url|txt}
+  /* 3. markdown-теги */
+  // **bold**
+  txt = txt.replace(/\*\*(.+?)\*\*/g, '<b>$1</b>');
+  // [text](url)
+  txt = txt.replace(/\[([^\]]+?)\]\(([^)]+?)\)/g, '<a href="$2">$1</a>');
+  // [https://url] – короткая ссылка
+  txt = txt.replace(/\[(https?:\/\/[^\]]+?)\]/g, '<a href="$1">$1</a>');
+  // {a:url|text}
+  txt = txt.replace(/\{a:([^|]+)\|([^}]+)\}/g, '<a href="$1">$2</a>');
 
-  /* 4. переводы строк */
-  t = t.replace(/\r\n/g,'\n')
-       .replace(/\n{2,}/g,'<br><br>')
-       .replace(/\n/g,'<br>');
+  /* 4. переносы строк */
+  txt = txt.replace(/\r\n/g, '\n')
+           .replace(/\n{2,}/g, '<br><br>')
+           .replace(/\n/g, '<br>');
 
-  /* 5. возвращаем placeholders */
-  Object.entries(keep).forEach(([id,val]) => {
-    t = t.replaceAll(id, val);
+  /* 5. возвращаем плейсхолдеры */
+  Object.entries(keep).forEach(([id, val]) => {
+    txt = txt.replaceAll(id, val);
   });
 
-  return t.trim();
+  return txt.trim();
 }
 
-/* ───────────── превью ───────────── */
 function updatePreview() {
-  prev.innerHTML = formatText(tplInp.value);      // используем innerHTML!
+  prev.innerHTML = formatText(tplInp.value);
 }
 tplInp.addEventListener('input', updatePreview);
-updatePreview();
 
-// ───────────────────────────── Load
+/* ─────────────── Load JSON */
 function loadFile(file) {
   const r = new FileReader();
   r.onload = ev => {
     try {
       const data = JSON.parse(ev.target.result);
-      Object.entries(data).forEach(([k,v]) => {
+      Object.entries(data).forEach(([k, v]) => {
         if (!q(k)) return;
-        if (q(k).type === 'checkbox') q(k).checked = v;
-        else                          q(k).value   = v;
+        q(k).type === 'checkbox' ? q(k).checked = v : q(k).value = v;
       });
       updatePreview();
       msg('Значения из файла подставлены', true);
@@ -248,20 +252,21 @@ function loadFile(file) {
   r.readAsText(file);
 }
 
-// ───────────────────────────── Save
+/* ─────────────── Save JSON */
 document.getElementById('saveBtn').addEventListener('click', () => {
   if (!formEl.reportValidity()) return;
 
-  const data = new FormData(formEl), json = {};
-  for (const [k,v] of data.entries()) {
+  const data = new FormData(formEl);
+  const json = {};
+  for (const [k, v] of data.entries()) {
     const el = q(k);
     json[k] = el.type === 'checkbox' ? el.checked
-           : el.type === 'number'   ? Number(v) || 0
+            : el.type === 'number'  ? Number(v) || 0
                                     : v.trim();
   }
   json.template = formatText(json.template);
 
-  const blob = new Blob([JSON.stringify(json, null, 2)], {type:'application/json'});
+  const blob = new Blob([JSON.stringify(json, null, 2)], { type: 'application/json' });
   const link = Object.assign(document.createElement('a'), {
     href: URL.createObjectURL(blob),
     download: 'config.json'
@@ -271,11 +276,14 @@ document.getElementById('saveBtn').addEventListener('click', () => {
   msg('Файл сохранён', true);
 });
 
-// ───────────────────────────── Copy
+/* ─────────────── Copy template */
 document.getElementById('copyBtn').addEventListener('click', async () => {
-  await navigator.clipboard.writeText(prev.innerHTML);   // копируем готовый HTML
+  await navigator.clipboard.writeText(prev.innerHTML);
   msg('Шаблон скопирован', true);
 });
+
+/* ─────────────── init */
+updatePreview();
 </script>
 
 </body>
