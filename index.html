@@ -169,78 +169,114 @@ const status = document.getElementById('status');
 const tplInp = document.getElementById('templateField');
 
 // ───────────────────────────── Drag & Drop
-['dragenter','dragover','dragleave','drop'].forEach(e=>document.addEventListener(e,ev=>ev.preventDefault()));
-drop.addEventListener('click',()=>inp.click());
-drop.addEventListener('dragover',()=>drop.classList.add('drag'));
-drop.addEventListener('dragleave',()=>drop.classList.remove('drag'));
-drop.addEventListener('drop',e=>{
+['dragenter','dragover','dragleave','drop'].forEach(e =>
+  document.addEventListener(e, ev => ev.preventDefault()));
+drop.addEventListener('click', () => inp.click());
+drop.addEventListener('dragover', () => drop.classList.add('drag'));
+drop.addEventListener('dragleave', () => drop.classList.remove('drag'));
+drop.addEventListener('drop', e => {
   drop.classList.remove('drag');
-  if(e.dataTransfer.files[0]) loadFile(e.dataTransfer.files[0]);
+  if (e.dataTransfer.files[0]) loadFile(e.dataTransfer.files[0]);
 });
-inp.addEventListener('change',()=> inp.files[0] && loadFile(inp.files[0]));
+inp.addEventListener('change', () => inp.files[0] && loadFile(inp.files[0]));
 
 // ───────────────────────────── Helpers
-const q=(n)=>formEl.elements[n];
-function msg(text,good=false){
-  status.textContent=text;
-  status.className='msg '+(good?'good':'bad');
+const q = n => formEl.elements[n];
+function msg(text, good = false) {
+  status.textContent = text;
+  status.className   = 'msg ' + (good ? 'good' : 'bad');
 }
-function fmtTemplate(t){
-  return t.replace(/\n\n/g,' <br> <br> ')
-          .replace(/\n/g,' <br> ')
-          .replace(/\*\*(.*?)\*\*/g,' <b>$1</b> ')
-          .replace(/\[(.*?)\]\((.*?)\)/g,' <a href="$2">$1</a> ')
-          .replace(/\{a:(.*?)\\|(.*?)\}/g,' <a href="$1">$2</a> ')
-          .replace(/\s+/g,' ').trim();
+
+/* ======= formatText ======= */
+function formatText(raw) {
+  /* 1. прячем {placeholders} */
+  const keep = {};
+  let i = 0;
+  const tmp = raw.replace(/\{[^{}]+\}/g, m => {
+    const id = `__PH${i++}__`;
+    keep[id] = m;
+    return id;
+  });
+
+  /* 2. экранируем HTML */
+  let t = tmp.replace(/[&<>]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+
+  /* 3. markdown-замены */
+  t = t
+    .replace(/\*\*(.+?)\*\*/g,  '<b>$1</b>')                       // **bold**
+    .replace(/\[([^\]]+?)\]\(([^)]+?)\)/g,'<a href="$2">$1</a>')   // [txt](url)
+    .replace(/\[(https?:\/\/[^\]]+?)\]/g, '<a href="$1">$1</a>')   // [url]
+    .replace(/\{a:([^|]+)\|([^}]+)\}/g,'<a href="$1">$2</a>');     // {a:url|txt}
+
+  /* 4. переводы строк */
+  t = t.replace(/\r\n/g,'\n')
+       .replace(/\n{2,}/g,'<br><br>')
+       .replace(/\n/g,'<br>');
+
+  /* 5. возвращаем placeholders */
+  Object.entries(keep).forEach(([id,val]) => {
+    t = t.replaceAll(id, val);
+  });
+
+  return t.trim();
 }
-function updatePreview(){ prev.textContent=fmtTemplate(tplInp.value); }
-tplInp.addEventListener('input',updatePreview);
+
+/* ───────────── превью ───────────── */
+function updatePreview() {
+  prev.innerHTML = formatText(tplInp.value);      // используем innerHTML!
+}
+tplInp.addEventListener('input', updatePreview);
+updatePreview();
 
 // ───────────────────────────── Load
-function loadFile(file){
-  const r=new FileReader();
-  r.onload=ev=>{
-    try{
-      const data=JSON.parse(ev.target.result);
-      Object.entries(data).forEach(([k,v])=>{
-        if(!q(k)) return;
-        if(q(k).type==='checkbox') q(k).checked=v;
-        else q(k).value=v;
+function loadFile(file) {
+  const r = new FileReader();
+  r.onload = ev => {
+    try {
+      const data = JSON.parse(ev.target.result);
+      Object.entries(data).forEach(([k,v]) => {
+        if (!q(k)) return;
+        if (q(k).type === 'checkbox') q(k).checked = v;
+        else                          q(k).value   = v;
       });
-      updatePreview(); msg('Значения из файла подставлены',true);
-    }catch{ msg('Ошибка: некорректный JSON'); }
+      updatePreview();
+      msg('Значения из файла подставлены', true);
+    } catch {
+      msg('Ошибка: некорректный JSON');
+    }
   };
   r.readAsText(file);
 }
 
 // ───────────────────────────── Save
-document.getElementById('saveBtn').addEventListener('click',()=>{
-  if(!formEl.reportValidity()) return;
-  const data=new FormData(formEl),json={};
-  for(const [k,v] of data.entries()){
-    const el=q(k);
-    json[k]=el.type==='checkbox'?el.checked:
-            el.type==='number'  ?Number(v)||0
-                                 :v.trim();
-  }
-  json.template=fmtTemplate(json.template);
+document.getElementById('saveBtn').addEventListener('click', () => {
+  if (!formEl.reportValidity()) return;
 
-  const blob=new Blob([JSON.stringify(json,null,2)],{type:'application/json'});
-  const link=Object.assign(document.createElement('a'),{
-    href:URL.createObjectURL(blob),download:'config.json'
+  const data = new FormData(formEl), json = {};
+  for (const [k,v] of data.entries()) {
+    const el = q(k);
+    json[k] = el.type === 'checkbox' ? el.checked
+           : el.type === 'number'   ? Number(v) || 0
+                                    : v.trim();
+  }
+  json.template = formatText(json.template);
+
+  const blob = new Blob([JSON.stringify(json, null, 2)], {type:'application/json'});
+  const link = Object.assign(document.createElement('a'), {
+    href: URL.createObjectURL(blob),
+    download: 'config.json'
   });
-  link.click(); URL.revokeObjectURL(link.href);
-  msg('Файл сохранён',true);
+  link.click();
+  URL.revokeObjectURL(link.href);
+  msg('Файл сохранён', true);
 });
 
 // ───────────────────────────── Copy
-document.getElementById('copyBtn').addEventListener('click',async()=>{
-  await navigator.clipboard.writeText(prev.textContent);
-  msg('Шаблон скопирован',true);
+document.getElementById('copyBtn').addEventListener('click', async () => {
+  await navigator.clipboard.writeText(prev.innerHTML);   // копируем готовый HTML
+  msg('Шаблон скопирован', true);
 });
-
-// ───────────────────────────── 初期
-updatePreview();
 </script>
+
 </body>
 </html>
