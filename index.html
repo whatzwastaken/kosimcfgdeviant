@@ -83,10 +83,16 @@ hr{border:none;border-top:1px solid var(--border);margin:0}
       <span><input type="checkbox" name="randomize" checked>Включить</span>
     </label>
 
-    <label class="req">Количество потоков
-      <small>thread_count</small>
-      <input type="number" name="thread_count" min="1" value="1">
+    <label>Задержка (сек.)
+      <small>delay</small>
+      <input type="number" name="delay" value="10" min="0">
     </label>
+
+    <label>Папка cookie
+      <small>cookies_dir</small>
+      <input name="cookies_dir" value="cookies">
+    </label>
+
   </div>
 
   <label>Текст шаблона сообщения
@@ -103,26 +109,24 @@ hr{border:none;border-top:1px solid var(--border);margin:0}
       <small>api_base</small>
       <input name="api_base" required placeholder="https://example.com/api">
     </label>
-    <label>Резервная партия
+    <label>Резерв
       <small>reserve_batch</small>
       <input type="number" name="reserve_batch" value="1" min="0">
+    </label>
+    <label class="req">Количество потоков
+      <small>thread_count</small>
+      <input type="number" name="thread_count" min="1" value="1">
     </label>
     <label>Максимум потоков на браузер
       <small>max_threads</small>
       <input type="number" name="max_threads" value="1" min="1">
     </label>
-    <label>Задержка (сек.)
-      <small>delay</small>
-      <input type="number" name="delay" value="10" min="0">
-    </label>
+    
     <label>Ссылка API записи
       <small>link_api</small>
       <input name="link_api">
     </label>
-    <label>Папка cookie
-      <small>cookies_dir</small>
-      <input name="cookies_dir" value="cookies">
-    </label>
+    
     <label>Файл логов
       <small>log_path</small>
       <input name="log_path" value="sender.log">
